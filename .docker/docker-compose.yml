@@ -1,0 +1,54 @@
+version: '3.6'
+services:
+    db:
+        image: postgres:latest
+        ports:
+            - "5432:5432"
+        volumes:
+            - ./init.sql:/docker-entrypoint-initdb.d/1-init.sql
+        environment:
+            POSTGRES_USER: "postgres"
+            POSTGRES_PASSWORD: "password"
+            POSTGRES_DB: "micro-db"
+        networks:
+            - backend
+
+    configserver:
+        container_name: 'configserver'
+        build:
+            context: ../configserver
+            dockerfile: Dockerfile
+        depends_on:
+            - db
+        ports:
+            - "8071:8071"
+        networks:
+            - backend
+
+    eureka-server:
+        container_name: "eureka-server"
+        build:
+            context: ../eureka-server
+            dockerfile: Dockerfile
+        depends_on:
+            - configserver
+        ports:
+            - "8761:8761"
+        networks:
+            - backend
+
+    api-gateway:
+        container_name: "api-gateway"
+        build:
+            context: ../api-gateway
+            dockerfile: Dockerfile
+        depends_on:
+            - eureka-server
+        ports:
+            - "8765:8765"
+        networks:
+            - backend
+
+networks:
+    backend:
+        driver: bridge
